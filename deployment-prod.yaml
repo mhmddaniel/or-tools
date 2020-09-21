@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment                 
+metadata:
+  name: route-optimization-prod             
+spec:        
+  replicas: 3
+  selector:
+    matchLabels:
+      app: route-optimization-prod          
+  template:                      
+    metadata:
+      labels:                   
+        app: route-optimization-prod 
+    spec:
+      containers:
+      - name: route-optimization-prod
+        image: registry.gitlab.com/paketid/route-optimization:dev-1.0.0 
+        imagePullPolicy: "Always"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 200Mi
+        ports:
+          - containerPort: 80  
+      imagePullSecrets:
+      - name: regcred
+---
+apiVersion: v1
+kind: Service                    
+metadata:
+  name: route-optimization-prod     
+spec:
+  type: NodePort                 
+  ports:                         
+  - name: http
+    port: 80
+    targetPort: 80
+  selector:
+    app: route-optimization-prod

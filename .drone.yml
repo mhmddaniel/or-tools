@@ -1,0 +1,15 @@
+kind: pipeline
+type: exec
+name: default
+
+steps:
+- name: build-dev
+  commands:
+    - hostnamectl
+    - bash /root/.dclog
+    - cat .version
+    - bash .deploy-dev.sh
+    
+  when:
+      event: push
+      branch: development

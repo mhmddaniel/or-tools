@@ -1,0 +1,33 @@
+stages:
+  - unit-testing
+  - build
+  - deploy
+
+unit_testing:
+  stage: unit-testing
+  tags:
+    - k8s
+  only:
+    - master
+  script:
+    - echo "holla"
+
+deploy to production:
+  stage: deploy
+  tags:
+    - k8s
+  only:
+    - master
+  script:
+    - bash /home/gitlab-runner/.dclog
+    - bash .deploy-prod.sh
+
+deploy to development:
+  stage: deploy
+  tags:
+    - k8s
+  only:
+    - development
+  script:
+    - bash /home/gitlab-runner/.dclog
+    - bash .deploy-dev.sh
