@@ -1,18 +1,12 @@
-FROM python:3.7-slim
+FROM python:3.12-slim
 
 COPY . /srv/flask_app
 WORKDIR /srv/flask_app
 
-RUN apt-get clean \
-    && apt-get -y update
+RUN apt-get update && apt-get clean
 
-RUN apt-get -y install nginx \
-    && apt-get -y install python3-dev \
-    && apt-get -y install build-essential
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install -r requirements.txt --src /usr/local/src
-RUN pip install uwsgi
+EXPOSE 8000
 
-COPY nginx.conf /etc/nginx
-RUN chmod +x ./start.sh
-CMD ["./start.sh"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "wsgi:app"]

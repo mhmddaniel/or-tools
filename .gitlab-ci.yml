@@ -20,7 +20,7 @@ deploy to production:
     - master
   script:
     - bash /home/gitlab-runner/.dclog
-    - bash .deploy-prod.sh
+    - bash deploy/scripts/.deploy-prod.sh
 
 deploy to development:
   stage: deploy
@@ -30,4 +30,4 @@ deploy to development:
     - development
   script:
     - bash /home/gitlab-runner/.dclog
-    - bash .deploy-dev.sh
+    - bash deploy/scripts/.deploy-dev.sh

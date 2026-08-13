@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Flask (WSGI)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/wsgi.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Flask (Module)",
+            "type": "python",
+            "request": "launch",
+            "module": "flask",
+            "env": {
+                "FLASK_APP": "wsgi.py",
+                "FLASK_DEBUG": "1"
+            },
+            "args": [
+                "run",
+                "--host=127.0.0.1",
+                "--port=8000"
+            ],
+            "jinja": true,
+            "justMyCode": true
+        }
+    ]
+}
