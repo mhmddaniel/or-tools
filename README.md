@@ -51,10 +51,17 @@ docker run -p 8000:8000 -e HERE_API_KEY="your-api-key" route-optimization-api
 ## API Endpoints
 
 - `GET /` : Health check / Info page.
-- `POST /routing` : Accepts a JSON payload containing `task_list`, `vehicle_capacities`, `time_limit`, etc., and returns the optimized routes for each vehicle.
-- `POST /time-estimated` : Calculates estimated travel time and distance between two coordinates (`coordinate_origin` and `coordinate_destination`).
-- `POST /geocoding` : Converts a raw address into geographic coordinates.
-- `POST /georeverse` : Converts latitude and longitude coordinates into a human-readable address.
+- `POST /api/v1/routes/optimize` : Accepts a JSON payload containing `task_list`, `vehicle_capacities`, `time_limit`, etc., and returns the optimized routes for each vehicle.
+  
+  **Advanced Optimization Features:**
+  - **Service Time**: Pass `"service_time": 600` (in seconds) inside `task_list` items to model unloading/loading duration.
+  - **Skill-Based Routing (Tags)**: Pass `"tags": ["East"]` in `task_list` items, and `"vehicle_tags": [["East"], ["West"]]` to restrict tasks to specifically assigned vehicles.
+  - **Vehicle Time Windows**: Pass `"vehicle_time_windows": [[0, 28800], [28800, 57600]]` (in seconds from 00:00) to enforce strict working shifts for drivers.
+  - **Task Time Windows**: Pass `"time_windows": [[0, 86400], [3600, 7200], ...]` to enforce arrival time constraints on specific tasks.
+
+- `POST /api/v1/estimations/time` : Calculates estimated travel time and distance between two coordinates (`coordinate_origin` and `coordinate_destination`).
+- `GET /api/v1/geocode?address=...` : Converts a raw address into geographic coordinates.
+- `GET /api/v1/geocode/reverse?coordinate=...` : Converts latitude and longitude coordinates into a human-readable address.
 
 ## OSRM (OpenStreetMap Routing Machine) Reference
 For calculating exact road distances, the API reaches out to an OSRM backend. 

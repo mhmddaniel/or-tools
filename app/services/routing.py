@@ -74,6 +74,14 @@ def solve_routing(result: dict) -> dict:
     maximum_distance = result.get('maximum_distance', 0)
     maximum_task = result.get('maximum_task', 0)
     time_windows = result.get('time_windows', [])
+    vehicle_time_windows = result.get('vehicle_time_windows', [])
+    vehicle_tags = result.get('vehicle_tags', [])
+    
+    if not vehicle_time_windows:
+        vehicle_time_windows = [[0, 100000]] * data['num_vehicles']
+        
+    if not vehicle_tags:
+        vehicle_tags = [[] for _ in range(data['num_vehicles'])]
     
     if multitrip == 1:
         back_to_depot = 1
@@ -91,12 +99,18 @@ def solve_routing(result: dict) -> dict:
     weight_demand = create_demand_model(result, "weight_demand")
     locations = create_location_model(result)
     
+    # Parse service times
+    service_times = []
+    for task in result['task_list']:
+        service_times.append(int(task.get('service_time', 0)))
+    data['service_times'] = service_times
+    
     if back_to_depot == 0:
         data['starts'] = [(len(result['task_list']) - 1) for _ in range(data['num_vehicles'])]
         data['ends'] = [0 for _ in range(data['num_vehicles'])]
-        data['distance_matrix'] = compute_ovrp_distance_matrix(locations, slack)
+        data['distance_matrix'], data['time_matrix'] = compute_ovrp_distance_matrix(locations, slack)
     else:
-        data['distance_matrix'] = compute_distance_matrix(locations, slack)
+        data['distance_matrix'], data['time_matrix'] = compute_distance_matrix(locations, slack)
 
     used_all = False
     def_time_limit = time_limit
@@ -122,6 +136,7 @@ def solve_routing(result: dict) -> dict:
                 
         routing = pywrapcp.RoutingModel(manager)
 
+        # Vehicle specific matching logic (existing)
         for index_task in range(len(result['task_list'])):
             if 'vehicle_list' in result['task_list'][index_task]:
                 vl = result['task_list'][index_task]['vehicle_list']
@@ -129,6 +144,18 @@ def solve_routing(result: dict) -> dict:
                     vl.insert(0, -1)
                     index = manager.NodeToIndex(index_task)
                     routing.VehicleVar(index).SetValues(vl)
+                    
+        # Tag/Skill based matching logic (Mile.app feature)
+        for index_task in range(1, len(result['task_list'])):
+            task_tags = result['task_list'][index_task].get('tags', [])
+            if task_tags:
+                allowed_vehicles = [-1] # -1 allows node to be dropped if necessary
+                for v_id in range(data['num_vehicles']):
+                    v_tags = vehicle_tags[v_id]
+                    if any(t in v_tags for t in task_tags):
+                        allowed_vehicles.append(v_id)
+                index = manager.NodeToIndex(index_task)
+                routing.VehicleVar(index).SetValues(allowed_vehicles)
 
         def distance_callback(from_index, to_index):
             from_node = manager.IndexToNode(from_index)
@@ -147,6 +174,44 @@ def solve_routing(result: dict) -> dict:
         routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
         demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
         weight_callback_index = routing.RegisterUnaryTransitCallback(weight_callback)
+
+        if len(time_windows) > 0 or len(vehicle_time_windows) > 0:
+            def time_callback(from_index, to_index):
+                from_node = manager.IndexToNode(from_index)
+                to_node = manager.IndexToNode(to_index)
+                travel_time = data['time_matrix'][from_node][to_node]
+                service_time = data['service_times'][from_node]
+                return travel_time + service_time
+
+            time_callback_index = routing.RegisterTransitCallback(time_callback)
+            routing.AddDimension(
+                time_callback_index,
+                30,  # allow waiting time
+                100000,  # maximum time per vehicle
+                False,  # Don't force start cumul to zero.
+                'Time')
+            time_dimension = routing.GetDimensionOrDie('Time')
+            
+            # Add time windows for tasks
+            if len(time_windows) > 0:
+                for location_idx, time_window in enumerate(time_windows):
+                    if location_idx == 0:
+                        continue
+                    index = manager.NodeToIndex(location_idx)
+                    time_dimension.CumulVar(index).SetRange(time_window[0], time_window[1])
+            
+            # Add vehicle time windows (working hours)
+            for vehicle_id in range(data['num_vehicles']):
+                index = routing.Start(vehicle_id)
+                vtw = vehicle_time_windows[vehicle_id]
+                time_dimension.CumulVar(index).SetRange(vtw[0], vtw[1])
+                # Cap the End node
+                end_index = routing.End(vehicle_id)
+                time_dimension.CumulVar(end_index).SetRange(vtw[0], vtw[1])
+                
+            for i in range(data['num_vehicles']):
+                routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.Start(i)))
+                routing.AddVariableMinimizedByFinalizer(time_dimension.CumulVar(routing.End(i)))
 
         if maximum_task > 0:
             plus_one_callback_index = routing.RegisterUnaryTransitCallback(lambda index: 1)
@@ -219,7 +284,7 @@ def solve_routing(result: dict) -> dict:
             if time_limit > 24:
                 used_all = True
             if time_limit == 0:
-               time_limit = def_time_limit + 1
+                time_limit = def_time_limit + 1
         else:
             used_all = True
 
