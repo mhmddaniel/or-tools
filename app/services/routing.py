@@ -145,7 +145,7 @@ def solve_routing(result: dict) -> dict:
                     index = manager.NodeToIndex(index_task)
                     routing.VehicleVar(index).SetValues(vl)
                     
-        # Tag/Skill based matching logic (Mile.app feature)
+        # Tag/Skill based matching logic
         for index_task in range(1, len(result['task_list'])):
             task_tags = result['task_list'][index_task].get('tags', [])
             if task_tags:

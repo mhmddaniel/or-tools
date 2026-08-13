@@ -13,22 +13,22 @@ It is designed to receive lists of tasks with geographic locations or addresses,
 ## Prerequisites
 
 - **Python 3.12** or higher.
-- **Here Maps API Keys**: The geocoding service requires Here Maps credentials. These should be exposed as environment variables:
-  ```bash
-  export HERE_API_KEY="your-api-key"
-  # Or legacy credentials:
-  export HERE_APP_ID="your-app-id"
-  export HERE_APP_CODE="your-app-code"
-  ```
+- **Here Maps API Keys**: The geocoding service requires Here Maps credentials. These should be exposed via a `.env` file.
 
 ## Local Setup & Running
 
-1. **Install dependencies**:
+1. **Clone the repository**
+2. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` to configure your `OSRM_BASE_URL` (default: http://router.project-osrm.org) and `HERE_API_KEY` for geocoding.
+3. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Run the Flask application (Development)**:
+4. **Run the Flask application (Development)**:
    ```bash
    flask --app wsgi run --host=127.0.0.1 --port=8000 --debug
    ```

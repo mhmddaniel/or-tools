@@ -5,8 +5,8 @@ from app.utils.helpers import clean_address
 
 def get_here_client():
     api_key = os.environ.get("HERE_API_KEY")
-    app_id = os.environ.get("HERE_APP_ID", "brUMhDedQJcTEBv3WRm2")
-    app_code = os.environ.get("HERE_APP_CODE", "gEuqige5xqyAJ3Gi5x1Qaw")
+    app_id = os.environ.get("HERE_APP_ID")
+    app_code = os.environ.get("HERE_APP_CODE")
     
     if api_key:
         return Here(api_key=api_key)
